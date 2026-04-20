@@ -130,6 +130,8 @@
             }
         };
 
+        const TOTAL_STEPS = 10;
+
         const FONT_SIZE_OPTIONS = [
             { label: 'XS', value: '2' },
             { label: 'S', value: '3' },
@@ -137,6 +139,37 @@
             { label: 'L', value: '5' },
             { label: 'XL', value: '6' }
         ];
+
+        const getScreenFromHash = () => {
+            const normalizedHash = window.location.hash.replace(/^#\/?/, '');
+            const stepMatch = normalizedHash.match(/^step(\d+)$/i);
+
+            if (stepMatch) {
+                const stepNumber = parseInt(stepMatch[1], 10);
+                if (stepNumber >= 1 && stepNumber <= TOTAL_STEPS) {
+                    return `step-${stepNumber}`;
+                }
+            }
+
+            if (normalizedHash === 'welcome') return 'welcome';
+            if (normalizedHash === 'complete') return 'complete';
+            if (normalizedHash === 'sunrise') return 'sunrise';
+
+            return null;
+        };
+
+        const getHashFromScreen = (screen) => {
+            if (screen.startsWith('step-')) {
+                const stepNumber = parseInt(screen.split('-')[1], 10);
+                return `#/step${stepNumber}`;
+            }
+
+            if (screen === 'welcome') return '#/welcome';
+            if (screen === 'complete') return '#/complete';
+            if (screen === 'sunrise') return '#/sunrise';
+
+            return '#/';
+        };
 
         const normalizeEditorHtml = (html) => {
             if (!html) return '';
@@ -482,16 +515,37 @@
 
         // --- APP ---
         function MorningRitualApp() {
-            const [currentScreen, setCurrentScreen] = useState('sunrise');
+            const initialScreen = getScreenFromHash() || 'sunrise';
+            const [currentScreen, setCurrentScreen] = useState(initialScreen);
             const [completedSteps, setCompletedSteps] = useState(new Set());
             const [currentTime, setCurrentTime] = useState('');
             const [currentDate, setCurrentDate] = useState('');
-            const [showAnimation, setShowAnimation] = useState(true);
+            const [showAnimation, setShowAnimation] = useState(initialScreen === 'sunrise');
             const [welcomeMessage, setWelcomeMessage] = useState('');
             const [finalMessage, setFinalMessage] = useState('');
             const [routineStartTime, setRoutineStartTime] = useState(null);
             const [elapsedTime, setElapsedTime] = useState(0);
             const [activeModalStep, setActiveModalStep] = useState(null);
+
+            useEffect(() => {
+                const handleHashChange = () => {
+                    const screenFromHash = getScreenFromHash();
+                    if (screenFromHash && screenFromHash !== currentScreen) {
+                        setCurrentScreen(screenFromHash);
+                        setShowAnimation(screenFromHash === 'sunrise');
+                    }
+                };
+
+                window.addEventListener('hashchange', handleHashChange);
+                return () => window.removeEventListener('hashchange', handleHashChange);
+            }, [currentScreen]);
+
+            useEffect(() => {
+                const targetHash = getHashFromScreen(currentScreen);
+                if (window.location.hash !== targetHash) {
+                    window.location.hash = targetHash;
+                }
+            }, [currentScreen]);
 
             useEffect(() => {
                 setWelcomeMessage(generateWelcomeMessage());
@@ -609,7 +663,7 @@
             };
 
             const goToNextStep = (stepId) => {
-                if (stepId < 10) {
+                if (stepId < TOTAL_STEPS) {
                 setCurrentScreen(`step-${stepId + 1}`);
                 } else {
                 setCurrentScreen('complete');
@@ -628,7 +682,7 @@
                     setCurrentScreen(`step-${stepNumber - 1}`);
                 }
                 } else if (currentScreen === 'complete') {
-                setCurrentScreen('step-10');
+                setCurrentScreen(`step-${TOTAL_STEPS}`);
                 }
             };
 
@@ -711,7 +765,7 @@
                 const stepNumber = parseInt(currentScreen.split('-')[1]);
                 const step = ritualSteps[stepNumber - 1];
                 const isCompleted = completedSteps.has(stepNumber);
-                const totalSteps = 10;
+                const totalSteps = TOTAL_STEPS;
                 const hasModal = Boolean(MODAL_STEP_CONFIG[stepNumber]);
 
                 return (
