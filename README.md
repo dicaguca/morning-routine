@@ -27,6 +27,6 @@ Each screen has its own URL: `#/welcome`, `#/step1` … `#/step10`, `#/complete`
 
 ## Making changes
 
-- Step titles, descriptions and links are in the `steps` array in `index.html` (search for `{ id: 1,`).
+- Step titles, descriptions and links are in the `ritualSteps` list in `index.html`.
 - Commit to `main` and push. GitHub Pages republishes automatically.
 - Sister app: [shutdown-routine](https://github.com/dicaguca/shutdown-routine).
